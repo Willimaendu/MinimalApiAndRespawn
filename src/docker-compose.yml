@@ -1,0 +1,18 @@
+version: '3.4'
+
+services:
+  minimalapiandrespawn:
+    image: ${DOCKER_REGISTRY-}minimalapiandrespawn
+    build:
+      context: .
+      dockerfile: MinimalApiAndRespawn/Dockerfile
+    depends_on: [postgres]
+
+  postgres:
+    image: postgres:latest
+    environment:
+      - POSTGRES_PASSWORD=P@ssw0rd
+      - POSTGRES_USER=admin
+      - POSTGRES_DB=MinimalApiAndRespawn
+    ports:
+      - "5432:5432"
