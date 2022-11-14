@@ -2,9 +2,9 @@
 
 public class CustomerResponse
 {
-    public int Id { get; init; }
+    public int Id { get; init; } = default!;
 
-    public string Name { get; init; }
+    public string Name { get; init; } = default!;
 
-    public string LastName { get; init; }
+    public string LastName { get; init; } = default!;
 }

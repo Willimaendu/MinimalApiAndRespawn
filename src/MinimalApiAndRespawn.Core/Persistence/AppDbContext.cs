@@ -10,5 +10,5 @@ public class AppDbContext : DbContext
     {
     }
 
-    public virtual DbSet<Customer> Customers { get; set; }
+    public DbSet<Customer> Customers { get; set; }
 }

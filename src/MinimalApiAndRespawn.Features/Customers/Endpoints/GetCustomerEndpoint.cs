@@ -1,5 +1,6 @@
 ﻿using FastEndpoints;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 using MinimalApiAndRespawn.Core.Persistence;
 using MinimalApiAndRespawn.Features.Customers.Contracts.Requests;
 using MinimalApiAndRespawn.Features.Customers.Contracts.Responses;
@@ -10,16 +11,17 @@ namespace MinimalApiAndRespawn.Features.Customers.Endpoints;
 [HttpGet("/api/customers/{id}"), AllowAnonymous]
 public class GetCustomerEndpoint : Endpoint<GetCustomerRequest, CustomerResponse>
 {
-    private readonly AppDbContext _appDbContext;
+    private readonly IDbContextFactory<AppDbContext> _dbContextFactory;
 
-    public GetCustomerEndpoint(AppDbContext appDbContext)
+    public GetCustomerEndpoint(IDbContextFactory<AppDbContext> dbContextFactory)
     {
-        _appDbContext = appDbContext;
+        _dbContextFactory = dbContextFactory;
     }
 
-    public override async Task HandleAsync(GetCustomerRequest request, CancellationToken cancellationToken)
+    public override async Task HandleAsync(GetCustomerRequest request, CancellationToken cancellationToken = default)
     {
-        var customer = await _appDbContext.Customers.FindAsync(request.Id, cancellationToken);
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
+        var customer = await dbContext.Customers.FindAsync(new object[] { request.Id }, cancellationToken: cancellationToken);
 
         if(customer == null)
         {

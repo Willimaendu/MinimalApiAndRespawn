@@ -1,5 +1,6 @@
 ﻿using FastEndpoints;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 using MinimalApiAndRespawn.Core.Persistence;
 using MinimalApiAndRespawn.Core.Persistence.Entities;
 using MinimalApiAndRespawn.Features.Customers.Contracts.Requests;
@@ -11,14 +12,14 @@ namespace MinimalApiAndRespawn.Features.Customers.Endpoints;
 [HttpPost("api/customers/create"), AllowAnonymous]
 public class CreateCustomerEndpoint : Endpoint<CreateCustomerRequest, CustomerResponse>
 {
-    private readonly AppDbContext _appDbContext;
+    private readonly IDbContextFactory<AppDbContext> _dbContextFactory;
 
-    public CreateCustomerEndpoint(AppDbContext appDbContext)
+    public CreateCustomerEndpoint(IDbContextFactory<AppDbContext> dbContextFactory)
     {
-        _appDbContext = appDbContext;
+        _dbContextFactory = dbContextFactory;
     }
 
-    public override async Task HandleAsync(CreateCustomerRequest request, CancellationToken cancellationToken)
+    public override async Task HandleAsync(CreateCustomerRequest request, CancellationToken cancellationToken = default)
     {
         var customer = new Customer
         {
@@ -26,17 +27,14 @@ public class CreateCustomerEndpoint : Endpoint<CreateCustomerRequest, CustomerRe
             Name = request.Name
         };
 
-        _appDbContext.Customers.Add(customer);
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
+        dbContext.Customers.Add(customer);
+        await dbContext.SaveChangesAsync(cancellationToken);
+        await SendCreatedAtAsync<GetCustomerEndpoint>(
+            new { customer.Id },
+            customer.ToCustomerReponse(),
+            generateAbsoluteUrl: true,
+            cancellation: cancellationToken);
 
-        var customerResponse = customer.ToCustomerReponse();
-
-        if (await _appDbContext.SaveChangesAsync(cancellationToken) > 0)
-        {
-            await SendCreatedAtAsync<GetCustomerEndpoint>(new { customer.Id }, customerResponse, generateAbsoluteUrl: true, cancellation: cancellationToken);
-        }
-        else
-        {
-            await SendErrorsAsync(cancellation: cancellationToken);
-        }
     }
 }
